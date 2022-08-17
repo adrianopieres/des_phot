@@ -37,10 +37,11 @@ def ap_phot(im_name, coord_file, det_file, max_n_psf):
     iraf.phot(image=im_name+'[0]', coord=coord_file,
               output='default', verbose='no', verify='no')
     iraf.pdump(infile=im_name + '0.mag.1', fields="ID,XCENTER,YCENTER,MAG,MERR,SHARPNESS,CHI",
-               expr='yes', Stdout=im_name + '0.mag')
+               expr="(MAG != INDEF)&&(MERR != INDEF)", Stdout=im_name + '0.mag')
     iraf.pstselect(image=im_name+'[0]', photfile='default',
                    pstfile='default', maxnpsf=max_n_psf, verbose='no', verify='no')
     print('Ap_phot run for {}'.format(im_name))
+    return im_name + '0.mag'
 
 
 def detection(im_name):
@@ -194,8 +195,8 @@ def create_pst_based_on_multipar(phot_file, mag_low, band, pst_file, nmax_psf, I
     """
 
     tilename = pst_file[0:13]
-    XCENTER, YCENTER, ID, SHARPNESS, SROUND, GROUND, MAG = np.loadtxt(
-        phot_file, unpack=True)
+    print('PHOT FILE == ', phot_file)
+    XCENTER, YCENTER, ID, SHARPNESS, SROUND, GROUND, MAG = np.loadtxt(phot_file, unpack=True)
 
     mean_sharp = np.mean(SHARPNESS)
     median_sharp = np.median(SHARPNESS)
@@ -299,7 +300,7 @@ def PSF_phot(fits_image, imp_pst_file):
                  cache='no', allstarfile='default', rejfile='default',
                  subimage='default', verify='no', verbose='no')
     iraf.pdump(infile=image+'0.als.1', fields="ID,XCENTER,YCENTER,MAG,MERR,SHARPNESS,CHI",
-               expr='yes', Stdout=image+'_pre_cal.dat')
+               expr="(MAG != INDEF)&&(MERR != INDEF)", Stdout=image+'_pre_cal.dat')
 
     print('PSF_phot run on {}'.format(fits_image))
 
@@ -326,13 +327,15 @@ for ii in det_images:
     for jj in bands:
         image_name = glob.glob(ii[0:13] + '*_' + jj + '.fits')
         tilename = ii[0:13] + '_' + jj
-        print(image_name, ii, det_file)
-        ap_phot(image_name[0], ii, det_file, 200)
+        phot_pdump_file = ap_phot(image_name[0], ii, det_file, 200)
         pst_file = glob.glob(ii[0:13] + '*_' + jj + '.pst.1')
-        # phot_file, mag_low, band, pst_file, nmax_psf, INIT_ANG_DIST)
-        imp_pst_file = create_pst_based_on_multipar(image_name + '0.mag.1',
-                                                    3., 'i', pst_file, 50)
-        all_star_file_flat = PSF_phot(image_name, imp_pst_file)
+        
+        imp_pst_file = create_pst_based_on_multipar(phot_pdump_file,
+                                                    3., jj, pst_file, 50, 50)
+        print(imp_pst_file)
+        all_star_file_flat = PSF_phot(image_name[0], imp_pst_file)
+        
         wcs(image_name, all_star_file_flat, tilename + '_wcs_not_cal.dat')
+        
         ZP = calc_ZP(tilename + '_wcs_not_cal.dat', tilename +
                      '_' + jj + '.csv', jj, mag_lim_sat_DES)
