@@ -11,7 +11,7 @@ from pyraf import iraf
 from pyraf.iraf import digiphot, daophot, imarith
 import astropy.io.fits as fits
 from pyraf import gwm
-import glob
+import glob, os
 import matplotlib.pyplot as plt
 
 # conda create -n iraf_py36 python=3.6
@@ -20,7 +20,8 @@ import matplotlib.pyplot as plt
 # conda install matplotlib
 # iraf_env
 
-def ap_phot(im_name, coord_file, det_file, max_n_psf):
+
+def ap_phot(im_name, coord_file, max_n_psf):
     """_summary_
 
     Parameters
@@ -41,7 +42,6 @@ def ap_phot(im_name, coord_file, det_file, max_n_psf):
     iraf.pstselect(image=im_name+'[0]', photfile='default',
                    pstfile='default', maxnpsf=max_n_psf, verbose='no', verify='no')
     print('Ap_phot run for {}'.format(im_name))
-    return im_name + '0.mag'
 
 
 def detection(im_name):
@@ -87,9 +87,8 @@ def detection(im_name):
 
     iraf.daofind(image=im_name + '[0]', threshold=3.00,
                  output='default', verbose='no', verify='no')
-    iraf.pdump(infile=im_name + '0.coo.1', fields="XCENTER, YCENTER, ID, MAG, SHARPNESS, SROUND,GROUND",
-               expr='yes', Stdout=im_name + '0_det.dat')
-    return im_name + '0_det.dat'
+    iraf.pdump(infile=im_name + '0.coo.1', fields="ID, XCENTER, YCENTER, MAG, SHARPNESS, SROUND, GROUND",
+               expr="(MAG != INDEF)&&(SHARPNESS != INDEF)&&(SROUND != INDEF)&&(GROUND != INDEF)", Stdout=im_name + '0_det.dat')
 
 
 def matching_stars(infile_phot, infile_DES):
@@ -195,8 +194,10 @@ def create_pst_based_on_multipar(phot_file, mag_low, band, pst_file, nmax_psf, I
     """
 
     tilename = pst_file[0:13]
-    print('PHOT FILE == ', phot_file)
-    XCENTER, YCENTER, ID, SHARPNESS, SROUND, GROUND, MAG = np.loadtxt(phot_file, unpack=True)
+    print(pst_file)
+
+    ID, XCENTER, YCENTER, SHARPNESS, SROUND, GROUND, MAG = np.loadtxt(
+        phot_file, usecols=(0, 1, 2, 4, 5, 6, 9), unpack=True)
 
     mean_sharp = np.mean(SHARPNESS)
     median_sharp = np.median(SHARPNESS)
@@ -266,13 +267,16 @@ def create_pst_based_on_multipar(phot_file, mag_low, band, pst_file, nmax_psf, I
               sround_norm[i], ground_norm[i], newpar[i], file=f)
     f.close()
 
-    with open(pst_file) as f:
-        line = f.read().splitlines()
+    with open(pst_file) as ff:
+        line = ff.read().splitlines()
+    ff.close()
+
     g = open(pst_file[0:29] + '_imp_pst', 'w')
     for i in range(65):
         print(line[i], file=g)
+    print('PST_FILE == ', pst_file)
     idx_pst, xcenter, ycenter, mag, msky = np.loadtxt(
-        'phot_' + band + '.dat', unpack=True)
+        pst_file, unpack=True)
     idx_pst = [int(i) for i in idx_pst]
 
     count = 0
@@ -323,19 +327,28 @@ bands = ['g', 'r', 'i', 'z', 'Y']
 lim_mag = [17.2, 17.7, 17.8, 17.5, 15.6]
 
 for ii in det_images:
-    det_file = detection(ii)
+    # detection(ii)
+    det_file, coo_file = ii + '0_det.dat', ii + '0.coo.1'
     for jj in bands:
-        image_name = glob.glob(ii[0:13] + '*_' + jj + '.fits')
-        tilename = ii[0:13] + '_' + jj
-        phot_pdump_file = ap_phot(image_name[0], ii, det_file, 200)
-        pst_file = glob.glob(ii[0:13] + '*_' + jj + '.pst.1')
+        tilename = ii[0:13] + jj
+        image_name = glob.glob(ii[0:13] + jj + '.fits')[0]
+        phot_pdump_file = image_name + '0.mag'
         
-        imp_pst_file = create_pst_based_on_multipar(phot_pdump_file,
+        # ap_phot(image_name, coo_file, 200)
+        
+        pst_file = glob.glob(ii[0:13] + jj + '*.pst.1')[0]
+        
+        os.system('join --nocheck-order ' + det_file  + ' ' + phot_pdump_file + ' > ' + tilename + '_parsfile.dat')
+
+        imp_pst_file = create_pst_based_on_multipar(tilename + '_parsfile.dat',
                                                     3., jj, pst_file, 50, 50)
-        print(imp_pst_file)
-        all_star_file_flat = PSF_phot(image_name[0], imp_pst_file)
-        
+        all_star_file_flat = PSF_phot(image_name, imp_pst_file)
+
         wcs(image_name, all_star_file_flat, tilename + '_wcs_not_cal.dat')
-        
+
         ZP = calc_ZP(tilename + '_wcs_not_cal.dat', tilename +
                      '_' + jj + '.csv', jj, mag_lim_sat_DES)
+
+import subprocess
+subprocess.call(['speech-dispatcher'])
+subprocess.call(['spd-say', '"your process has finished"'])
