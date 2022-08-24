@@ -327,14 +327,14 @@ bands = ['g', 'r', 'i', 'z', 'Y']
 lim_mag = [17.2, 17.7, 17.8, 17.5, 15.6]
 
 for ii in det_images:
-    # detection(ii)
+    detection(ii)
     det_file, coo_file = ii + '0_det.dat', ii + '0.coo.1'
     for jj in bands:
         tilename = ii[0:13] + jj
         image_name = glob.glob(ii[0:13] + jj + '.fits')[0]
         phot_pdump_file = image_name + '0.mag'
         
-        # ap_phot(image_name, coo_file, 200)
+        ap_phot(image_name, coo_file, 200)
         
         pst_file = glob.glob(ii[0:13] + jj + '*.pst.1')[0]
         
