@@ -196,7 +196,7 @@ def create_pst_based_on_multipar(phot_file, mag_low, band, pst_file, nmax_psf, I
     tilename = pst_file[0:13]
     
     ID, XCENTER, YCENTER, SHARPNESS, SROUND, GROUND, MAG = np.loadtxt(
-        phot_file, usecols=(0, 1, 2, 4, 5, 6, 9), unpack=True)
+        phot_file, usecols=(0, 1, 2, 4, 5, 6, 10), unpack=True)
     print(ID)
     mean_sharp = np.mean(SHARPNESS)
     median_sharp = np.median(SHARPNESS)
@@ -331,11 +331,11 @@ for ii in det_images:
         image_name = glob.glob(ii[0:13] + jj + '.fits')[0]
         phot_pdump_file = image_name + '0.mag'
         
-        ap_phot(image_name, coo_file, 2000)
+        # ap_phot(image_name, coo_file, 2000)
         
         pst_file = glob.glob(ii[0:13] + jj + '*.pst.1')[0]
         
-        os.system('join --nocheck-order ' + det_file  + ' ' + phot_pdump_file + ' > ' + tilename + '_parsfile.dat')
+        # os.system('join --nocheck-order ' + det_file  + ' ' + phot_pdump_file + ' > ' + tilename + '_parsfile.dat')
 
         imp_pst_file = create_pst_based_on_multipar(tilename + '_parsfile.dat',
                                                     5., jj, pst_file, 50, 20)
