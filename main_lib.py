@@ -338,7 +338,7 @@ for ii in det_images:
         os.system('join --nocheck-order ' + det_file  + ' ' + phot_pdump_file + ' > ' + tilename + '_parsfile.dat')
 
         imp_pst_file = create_pst_based_on_multipar(tilename + '_parsfile.dat',
-                                                    0., jj, pst_file, 50, 20)
+                                                    5., jj, pst_file, 50, 20)
         all_star_file_flat = PSF_phot(image_name, imp_pst_file)
 
         wcs(image_name, all_star_file_flat, tilename + '_wcs_not_cal.dat')
