@@ -194,11 +194,10 @@ def create_pst_based_on_multipar(phot_file, mag_low, band, pst_file, nmax_psf, I
     """
 
     tilename = pst_file[0:13]
-    print(pst_file)
-
+    
     ID, XCENTER, YCENTER, SHARPNESS, SROUND, GROUND, MAG = np.loadtxt(
         phot_file, usecols=(0, 1, 2, 4, 5, 6, 9), unpack=True)
-
+    print(ID)
     mean_sharp = np.mean(SHARPNESS)
     median_sharp = np.median(SHARPNESS)
     mean_sround = np.mean(SROUND)
@@ -252,9 +251,9 @@ def create_pst_based_on_multipar(phot_file, mag_low, band, pst_file, nmax_psf, I
     plt.savefig(tilename + '_newpar.png')
     plt.close()
 
-    min_dist(XCENTER, YCENTER, MAG, 5., INIT_ANG_DIST)
+    min_d = min_dist(XCENTER, YCENTER, MAG, 5., INIT_ANG_DIST)
 
-    bright_star = (MAG < np.min(MAG) + mag_low) & (min_dist < INIT_ANG_DIST)
+    bright_star = (MAG < np.min(MAG) + mag_low) & (min_d > INIT_ANG_DIST)
     XCENTER, YCENTER, ID, SHARPNESS, SROUND, GROUND, MAG, sharp_norm, sround_norm, ground_norm, newpar = XCENTER[bright_star], YCENTER[bright_star], ID[bright_star], SHARPNESS[
         bright_star], SROUND[bright_star], GROUND[bright_star], MAG[bright_star], sharp_norm[bright_star], sround_norm[bright_star], ground_norm[bright_star], newpar[bright_star]
 
@@ -274,21 +273,19 @@ def create_pst_based_on_multipar(phot_file, mag_low, band, pst_file, nmax_psf, I
     g = open(pst_file[0:29] + '_imp_pst', 'w')
     for i in range(65):
         print(line[i], file=g)
-    print('PST_FILE == ', pst_file)
+    
     idx_pst, xcenter, ycenter, mag, msky = np.loadtxt(
         pst_file, unpack=True)
+    
     idx_pst = [int(i) for i in idx_pst]
 
-    count = 0
-    while count < nmax_psf:
-        for i in range(len(idx_par_sort)):
-            if idx_par_sort[i] in idx_pst:
-                idx_ = np.where(idx_pst == idx_par_sort[i])[0][0]
-    # inseri < para indexar a esquerda e parece funcionar
-                print("{:<9d}{:<10.3f}{:<10.3f}{:<12.3f}{:<15.7f}".format(
+    for i in range(len(idx_par_sort)):
+         if idx_par_sort[i] in idx_pst:
+            idx_ = np.where(idx_pst == idx_par_sort[i])[0][0]
+            print("{:<9d}{:<10.3f}{:<10.3f}{:<12.3f}{:<15.7f}".format(
                     idx_pst[idx_], xcenter[idx_], ycenter[idx_], mag[idx_], msky[idx_]), file=g)
-                count += 1
     g.close()
+
     return pst_file[0:29] + '_imp_pst'
 
 
@@ -327,21 +324,21 @@ bands = ['g', 'r', 'i', 'z', 'Y']
 lim_mag = [17.2, 17.7, 17.8, 17.5, 15.6]
 
 for ii in det_images:
-    detection(ii)
+    # detection(ii)
     det_file, coo_file = ii + '0_det.dat', ii + '0.coo.1'
     for jj in bands:
         tilename = ii[0:13] + jj
         image_name = glob.glob(ii[0:13] + jj + '.fits')[0]
         phot_pdump_file = image_name + '0.mag'
         
-        ap_phot(image_name, coo_file, 200)
+        ap_phot(image_name, coo_file, 2000)
         
         pst_file = glob.glob(ii[0:13] + jj + '*.pst.1')[0]
         
         os.system('join --nocheck-order ' + det_file  + ' ' + phot_pdump_file + ' > ' + tilename + '_parsfile.dat')
 
         imp_pst_file = create_pst_based_on_multipar(tilename + '_parsfile.dat',
-                                                    3., jj, pst_file, 50, 50)
+                                                    0., jj, pst_file, 50, 20)
         all_star_file_flat = PSF_phot(image_name, imp_pst_file)
 
         wcs(image_name, all_star_file_flat, tilename + '_wcs_not_cal.dat')
