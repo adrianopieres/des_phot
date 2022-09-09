@@ -197,7 +197,7 @@ def create_pst_based_on_multipar(phot_file, mag_low, band, pst_file, nmax_psf, I
     
     ID, XCENTER, YCENTER, SHARPNESS, SROUND, GROUND, MAG = np.loadtxt(
         phot_file, usecols=(0, 1, 2, 4, 5, 6, 10), unpack=True)
-    print(ID)
+
     mean_sharp = np.mean(SHARPNESS)
     median_sharp = np.median(SHARPNESS)
     mean_sround = np.mean(SROUND)
@@ -295,7 +295,7 @@ def PSF_phot(fits_image, imp_pst_file):
     iraf.psf(image=fits_image + "[0]", photfile='default', pstfile=imp_pst_file,
              psfimage='default', opstfile='default', groupfile='default', interactive='no',
              verify='no', verbose='no')
-    iraf.seepsf(psfimage=fits_image + "0.fits.psf",
+    iraf.seepsf(psfimage=fits_image + "0.psf.1.fits",
                 image=fits_image + '_seepsf.fits')
     iraf.allstar(image=fits_image+"[0]", photfile='default', psfimage='default',
                  cache='no', allstarfile='default', rejfile='default',
@@ -324,21 +324,21 @@ bands = ['g', 'r', 'i', 'z', 'Y']
 lim_mag = [17.2, 17.7, 17.8, 17.5, 15.6]
 
 for ii in det_images:
-    # detection(ii)
+    detection(ii)
     det_file, coo_file = ii + '0_det.dat', ii + '0.coo.1'
     for jj in bands:
         tilename = ii[0:13] + jj
         image_name = glob.glob(ii[0:13] + jj + '.fits')[0]
         phot_pdump_file = image_name + '0.mag'
-        
-        # ap_phot(image_name, coo_file, 2000)
+
+        ap_phot(image_name, coo_file, 100)
         
         pst_file = glob.glob(ii[0:13] + jj + '*.pst.1')[0]
         
-        # os.system('join --nocheck-order ' + det_file  + ' ' + phot_pdump_file + ' > ' + tilename + '_parsfile.dat')
+        os.system('join --nocheck-order ' + det_file  + ' ' + phot_pdump_file + ' > ' + tilename + '_parsfile.dat')
 
         imp_pst_file = create_pst_based_on_multipar(tilename + '_parsfile.dat',
-                                                    5., jj, pst_file, 50, 20)
+                                                    1., jj, pst_file, 50, 20)
         all_star_file_flat = PSF_phot(image_name, imp_pst_file)
 
         wcs(image_name, all_star_file_flat, tilename + '_wcs_not_cal.dat')
