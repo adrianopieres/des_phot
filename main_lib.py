@@ -35,6 +35,12 @@ def ap_phot(im_name, coord_file, max_n_psf):
     max_n_psf : _type_
         _description_
     """
+    im_data = fits.getdata(im_name, ext=0)
+    sky, sigma = sky_sigma(im_data)
+
+    iraf.datapars.sigma = sigma  # de acordo com a imagem
+    iraf.fitskypars.skyvalu = sky
+
     iraf.phot(image=im_name+'[0]', coord=coord_file,
               output='default', verbose='no', verify='no')
     iraf.pdump(infile=im_name + '0.mag.1', fields="ID,XCENTER,YCENTER,MAG,MERR,SHARPNESS,CHI",
@@ -43,6 +49,10 @@ def ap_phot(im_name, coord_file, max_n_psf):
                    pstfile='default', maxnpsf=max_n_psf, verbose='no', verify='no')
     print('Ap_phot run for {}'.format(im_name))
 
+def sky_sigma(im_data):
+    sky = np.median(im_data)
+    sigma = np.std(im_data[im_data < sky-np.min(im_data)])
+    return sky, sigma
 
 def detection(im_name):
     """Run script in the detections image
@@ -52,36 +62,40 @@ def detection(im_name):
     im_name : _type_
         _description_
     """
+    im_data = fits.getdata(im_name, ext=0)
+
+    sky, sigma = sky_sigma(im_data)
+
     iraf.daopars.unlearn
     iraf.photpars.unlearn
     iraf.datapars.unlearn
     iraf.fitskypars.unlearn
     iraf.centerpars.unlearn
     iraf.findpars.unlearn
-    iraf.photpars.zmag = 30.0
+    iraf.photpars.zmag = 25.0
     # Procurar no ds9 #Maximum equivalent exposure time (s)
     iraf.datapars.exposure = "EXPTIME"
     iraf.daopars.functio = "auto"
     iraf.datapars.gain = "GAIN"  # Maximum equivalent gain (e-/ADU)
     iraf.datapars.scale = 1
-    iraf.datapars.datamin = -100.0
-    iraf.datapars.datamax = 1500.0  # ou utilizar #1500
+    # iraf.datapars.datamin = -10.0
+    # iraf.datapars.datamax = 1500.0  # ou utilizar #1500
     iraf.daopars.saturated = 'yes'
     # de acordo com a imagem #desvio padra da #imexamin(comando 'r') no ds9
-    iraf.datapars.fwhmpsf = 11.84
-    iraf.datapars.sigma = 0.0275  # de acordo com a imagem
+    iraf.datapars.fwhmpsf = 4.00
+    iraf.datapars.sigma = sigma  # de acordo com a imagem
     iraf.datapars.readnoi = 0.0
-    iraf.daopars.psfrad = 161.5  # de acordo com imagem # raio da maior imagem
-    iraf.datapars.epadu = 1  # de acordo com imagem
-    iraf.daopars.fitrad = 4  # de acordo com a imagem #(~1.5 ou 2.5 fwhm)
+    iraf.daopars.psfrad = 20.0  # de acordo com imagem # raio da maior imagem
+    iraf.datapars.epadu = 1.  # de acordo com imagem
+    iraf.daopars.fitrad = 6.  # de acordo com a imagem #(~1.5 ou 2.5 fwhm)
     iraf.daopars.recenter = 'yes'
     iraf.daopars.fitsky = 'yes'
     iraf.daopars.groupsk = 'yes'
-    iraf.daopars.sannulu = 20.0
-    iraf.fitskypars.annulus = 10
-    iraf.fitskypars.dannulu = 6
-    iraf.fitskypars.skyvalu = 0.004
-    iraf.photpars.apertur = 6.0
+    iraf.daopars.sannulu = 60.0
+    iraf.fitskypars.annulus = 60
+    iraf.fitskypars.dannulu = 10
+    iraf.fitskypars.skyvalu = sky
+    iraf.photpars.apertur = 12.0
     iraf.centerpars.cbox = 3
     iraf.centerpars.cthresh = 3.0
 
@@ -315,6 +329,7 @@ def wcs(im_name, infile, outfile):
 files = glob.glob('*.fits')
 det_images = glob.glob('*_det.fits')
 tiles = [i[0:13] for i in det_images]
+
 # Maybe create a folder to each tile and write outcomes on them.
 bands = ['g', 'r', 'i', 'z', 'Y']
 
@@ -331,14 +346,14 @@ for ii in det_images:
         image_name = glob.glob(ii[0:13] + jj + '.fits')[0]
         phot_pdump_file = image_name + '0.mag'
 
-        ap_phot(image_name, coo_file, 100)
+        ap_phot(image_name, coo_file, 200)
         
         pst_file = glob.glob(ii[0:13] + jj + '*.pst.1')[0]
         
         os.system('join --nocheck-order ' + det_file  + ' ' + phot_pdump_file + ' > ' + tilename + '_parsfile.dat')
 
         imp_pst_file = create_pst_based_on_multipar(tilename + '_parsfile.dat',
-                                                    1., jj, pst_file, 50, 20)
+                                                    0.1, jj, pst_file, 50, 20)
         all_star_file_flat = PSF_phot(image_name, imp_pst_file)
 
         wcs(image_name, all_star_file_flat, tilename + '_wcs_not_cal.dat')
