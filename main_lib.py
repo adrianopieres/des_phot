@@ -75,7 +75,7 @@ def detection(im_name):
     iraf.photpars.zmag = 25.0
     # Procurar no ds9 #Maximum equivalent exposure time (s)
     iraf.datapars.exposure = "EXPTIME"
-    iraf.daopars.functio = "auto"
+    iraf.daopars.functio = "AUTO"
     iraf.datapars.gain = "GAIN"  # Maximum equivalent gain (e-/ADU)
     iraf.datapars.scale = 1
     # iraf.datapars.datamin = -10.0
@@ -133,7 +133,7 @@ def matching_stars(infile_phot, infile_DES):
     f.close()
 
 
-def calc_ZP(infile, infile_DES, band, mag_lim_sat_DES):
+def write_ZP(infile, infile_DES, band, mag_lim_sat_DES):
     """_summary_
 
     Parameters
@@ -152,18 +152,34 @@ def calc_ZP(infile, infile_DES, band, mag_lim_sat_DES):
     _type_
         _description_
     """
+    # Query example on easyaccess:
+    # SELECT ra, dec, wavg_mag_psf_g, wavg_mag_psf_r, wavg_mag_psf_i, wavg_mag_psf_z, wavg_mag_psf_y, flags_gold, ext_coadd, TILENAME FROM Y6_GOLD_2_0 WHERE ABS(ext_coadd) < 2 AND flags_gold = 0 AND ABS(wavg_mag_psf_g) < 28. AND TILENAME = 'DES0221-0958';> DES0221-0958_gold_y6.fits
+    hdu = fits.open(infile_DES, memmap=True)
+    RA_DES = hdu[1].data.field('ra')
+    DEC_DES = hdu[1].data.field('dec')
+    MAG_DES = hdu[1].data.field('wavg_mag_psf_'+ band)
+    hdu.close()
+    
+    cond = (MAG_DES > mag_lim_sat_DES)
+    
+    RA_DES, DEC_DES, MAG_DES = RA_DES[cond], DEC_DES[cond], MAG_DES[cond]
+    
+    IDX, RA_DAO, DEC_DAO, MAG_DAO, MAG_ERR, SHARPNESS, CHI = np.loadtxt(infile, usecols=(1,2,3,4,5,6), unpack=True)
+    
+    C_DAO = SkyCoord(ra=RA_DAO*u.degree, dec=DEC_DAO*u.degree)
+    C_DES = SkyCoord(ra=RA_DES*u.degree, dec=DEC_DES*u.degree)
 
-    # read files...
-    # excluir estrelas saturadas com mag < mag_lim_sat:
-    idx_des_faint = [i for i in idx_des if MAG_DES[j] > 17.]
-    idx_dao_faint = [(i, j) for i, j in zip(idx_des) if MAG_DES[j] > 17.]
+    idx_dao, idx_des, d2d, d3d = C_DES.search_around_sky(C_DAO, 1*u.arcsec)
 
     # plot Mag fotometria x Mag DES:
+    # for i,j in zip(idx_dao, idx_des):
+    #    print(C_DAO[i].ra.deg, C_DAO[i].dec.deg, C_DES[j].ra.deg, C_DES[j].dec.deg)
 
+    print(len(MAG_DAO[idx_dao]), len(MAG_DES[idx_des]), len(MAG_ERR[idx_dao]))
     best_fit = np.polyfit(
-        MAG[idx_dao_faint], MAG_DES[idx_des_faint], deg=1, w=1/MAG_ERR[idx_dao_faint]**2)
+        MAG_DAO[idx_dao], MAG_DES[idx_des], deg=1, w=1/MAG_ERR[idx_dao]**2)
 
-    plt.scatter(MAG[idx_dao_faint], MAG_DES[idx_des_faint])
+    plt.scatter(MAG_DAO[idx_dao], MAG_DES[idx_des])
     plt.xlabel('MAG in i band')
     plt.legend()
     plt.xlabel('Magnitude in daophot')
@@ -172,7 +188,11 @@ def calc_ZP(infile, infile_DES, band, mag_lim_sat_DES):
               best_fit[0], best_fit[1]))
     plt.savefig(infile[0:13] + '_ZP_' + band + '.png')
     plt.close()
-    return best_fit[0]
+    
+    g = open(infile[0:15] + '_calibrated_with_wcs.dat', 'w')
+    for i in range(len(IDX)):
+        print(IDX[i], RA_DAO[i], DEC_DAO[i], MAG_DAO[i] + best_fit[0], MAG_ERR[i], SHARPNESS[i], CHI[i], file=g)
+    g.close()
 
 
 def min_dist(X, Y, MAG, RANGE_MAG, INIT_ANG_DIST=20.):
@@ -292,12 +312,16 @@ def create_pst_based_on_multipar(phot_file, mag_low, band, pst_file, nmax_psf, I
         pst_file, unpack=True)
     
     idx_pst = [int(i) for i in idx_pst]
-
+    count = 0
     for i in range(len(idx_par_sort)):
-         if idx_par_sort[i] in idx_pst:
-            idx_ = np.where(idx_pst == idx_par_sort[i])[0][0]
-            print("{:<9d}{:<10.3f}{:<10.3f}{:<12.3f}{:<15.7f}".format(
-                    idx_pst[idx_], xcenter[idx_], ycenter[idx_], mag[idx_], msky[idx_]), file=g)
+        if count < nmax_psf:
+            if idx_par_sort[i] in idx_pst:
+                idx_ = np.where(idx_pst == idx_par_sort[i])[0][0]
+                print("{:<9d}{:<10.3f}{:<10.3f}{:<12.3f}{:<15.7f}".format(
+                        idx_pst[idx_], xcenter[idx_], ycenter[idx_], mag[idx_], msky[idx_]), file=g)
+                count += 1
+        else:
+            break
     g.close()
 
     return pst_file[0:29] + '_imp_pst'
@@ -306,22 +330,26 @@ def create_pst_based_on_multipar(phot_file, mag_low, band, pst_file, nmax_psf, I
 def PSF_phot(fits_image, imp_pst_file):
     # Run on iraf:
     # psf_filename = fits_image[0:13] + '_psf.fits'
+    print('Start to run PSF on {}'.format(fits_image))
     iraf.psf(image=fits_image + "[0]", photfile='default', pstfile=imp_pst_file,
              psfimage='default', opstfile='default', groupfile='default', interactive='no',
              verify='no', verbose='no')
+    print('Start to run seePSF on {}'.format(fits_image))
     iraf.seepsf(psfimage=fits_image + "0.psf.1.fits",
                 image=fits_image + '_seepsf.fits')
+    print('Start to run allstar on {}'.format(fits_image))
     iraf.allstar(image=fits_image+"[0]", photfile='default', psfimage='default',
                  cache='no', allstarfile='default', rejfile='default',
                  subimage='default', verify='no', verbose='no')
-    iraf.pdump(infile=image+'0.als.1', fields="ID,XCENTER,YCENTER,MAG,MERR,SHARPNESS,CHI",
-               expr="(MAG != INDEF)&&(MERR != INDEF)", Stdout=image+'_pre_cal.dat')
+    print('Finished to run allstar on {}'.format(fits_image))
+    iraf.pdump(infile=fits_image+'0.als.1', fields="ID,XCENTER,YCENTER,MAG,MERR,SHARPNESS,CHI",
+               expr="(MAG != INDEF)&&(MERR != INDEF)", Stdout=fits_image+'_pre_cal.dat')
 
     print('PSF_phot run on {}'.format(fits_image))
 
 
 def wcs(im_name, infile, outfile):
-    iraf.wcsctran(input=infile, output=outfile, image=im_name,
+    iraf.wcsctran(input=infile, output=outfile, image=im_name+'[0]',
                   inwcs='logical', outwcs='world', col="2 3")
     print('wcs run on {}'.format(outfile))
 
@@ -336,7 +364,11 @@ bands = ['g', 'r', 'i', 'z', 'Y']
 # According to DES DR2 paper this are the limits for saturation:
 # lim_mag = [15.2, 15.7, 15.8, 15.5, 13.6]
 # We are setting 2 magnitudes fainter than saturation limit:
-lim_mag = [17.2, 17.7, 17.8, 17.5, 15.6]
+mag_lim_sat_DES = {'g': 17.2,
+		   'r': 17.7,
+		   'i': 17.8,
+		   'z': 17.5,
+		   'Y': 15.6}
 
 for ii in det_images:
     detection(ii)
@@ -353,13 +385,15 @@ for ii in det_images:
         os.system('join --nocheck-order ' + det_file  + ' ' + phot_pdump_file + ' > ' + tilename + '_parsfile.dat')
 
         imp_pst_file = create_pst_based_on_multipar(tilename + '_parsfile.dat',
-                                                    0.1, jj, pst_file, 50, 20)
-        all_star_file_flat = PSF_phot(image_name, imp_pst_file)
+                                                    1.5, jj, pst_file, 50, 20)
+        PSF_phot(image_name, imp_pst_file)
+        
+        all_star_file_flat = image_name + '_pre_cal.dat'
 
         wcs(image_name, all_star_file_flat, tilename + '_wcs_not_cal.dat')
 
-        ZP = calc_ZP(tilename + '_wcs_not_cal.dat', tilename +
-                     '_' + jj + '.csv', jj, mag_lim_sat_DES)
+        write_ZP(tilename + '_wcs_not_cal.dat', tilename[:-2] +
+                 '_gold_y6.fits', jj, mag_lim_sat_DES[jj])
 
 import subprocess
 subprocess.call(['speech-dispatcher'])
