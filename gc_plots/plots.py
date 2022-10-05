@@ -18,12 +18,16 @@ c_gal = SkyCoord(l=L*u.degree, b=B*u.degree, frame='galactic')
 
 ra_gc, dec_gc = c_gal.icrs.ra.deg, c_gal.icrs.dec.deg
 
+ra_gc[ra_gc > 180.] -= 360.
+
 ra_tile_c, dec_tile_c, rall, decll, raul, decul, raur, decur, ralr, declr = np.loadtxt('coaddtiles-20121015.csv', delimiter=',', usecols=(3,4,9,10,11,12,13,14,15,16), unpack=True)
+
+ra_tile_c[ra_tile_c > 180.] -= 360.
 
 tile_name = np.loadtxt('coaddtiles-20121015.csv', usecols=(2), delimiter=',', dtype=str, unpack=True)
 
 polygon = Polygon([(i,j) for i,j in zip(ra_des_ftp, dec_des_ftp)])
-inside = [polygon.contains(Point(i, j)) for i,j in zip(ra_tile_c, dec_tile_c)]
+inside = [polygon.contains(Point(i, j))[0] for i,j in zip(ra_tile_c, dec_tile_c)]
 
 ra_tile_c[ra_tile_c > 180.] -= 360.
 rall[rall > 180.] -= 360.
@@ -42,22 +46,30 @@ decur = list(compress(decur, inside))
 ralr = list(compress(ralr, inside))
 declr = list(compress(declr, inside))
 tile_name = list(compress(tile_name, inside))
-
 fig,ax = plt.subplots()
 
 for i in range(len(rall)):
     y = np.array([[rall[i], decll[i]], [raul[i], decul[i]], [raur[i],decur[i]], [ralr[i],declr[i]], [rall[i], decll[i]]])
-    p = Polygon(y, edgecolor = 'k',alpha=0.2)
+    p = Polygon(y, edgecolor = 'k', alpha=0.2)
     ax.add_patch(p)
-    # plt.text(ra_tile_c[i], dec_tile_c[i], tile_name[i], fontsize=6, color='grey')
+    # inside2 = [p.contains(Point(ii, jj)) for ii,jj in zip(ra_gc, dec_gc)]
+    # if any(inside2):
+    #     plt.text(ra_tile_c[i], dec_tile_c[i], tile_name[i], fontsize=6, color='grey')
+
+for i in range(len(rall)):
+    y = np.array([[rall[i], decll[i]], [raul[i], decul[i]], [raur[i],decur[i]], [ralr[i],declr[i]], [rall[i], decll[i]]])
+    p = Polygon(y, edgecolor = 'k', alpha=0.2)
+    inside2 = [p.contains(Point(ii, jj))[0] for ii,jj in zip(ra_gc, dec_gc)]
+    print(inside2)
+    if any(inside2):
+        plt.text(ra_tile_c[i], dec_tile_c[i], tile_name[i], fontsize=12, color='k')
 
 for i in range(len(ra_gc)):
     plt.text(ra_gc[i], dec_gc[i], GC_name[i], fontsize=12)
 
 plt.plot(ra_des_ftp, dec_des_ftp, color='r')
-plt.scatter(ra_gc, dec_gc, marker='o', c='k')
+plt.scatter(ra_gc, dec_gc, marker='o', c='k', s=0.2)
 ax.set_xlim([100,-65])
-ax.set_ylim([-70, 10])
-plt.show()
-# plt.savefig('ftp.png')
-# plt.close()
+ax.set_ylim([-68, 7])
+plt.savefig('ftp.png')
+plt.close()
