@@ -99,10 +99,10 @@ def detection(im_name):
     iraf.centerpars.cbox = 3
     iraf.centerpars.cthresh = 3.0
 
-    iraf.daofind(image=im_name + '[0]', threshold=3.00,
-                 output='default', verbose='no', verify='no')
-    iraf.pdump(infile=im_name + '0.coo.1', fields="ID, XCENTER, YCENTER, MAG, SHARPNESS, SROUND, GROUND",
-               expr="(MAG != INDEF)&&(SHARPNESS != INDEF)&&(SROUND != INDEF)&&(GROUND != INDEF)", Stdout=im_name + '0_det.dat')
+    # iraf.daofind(image=im_name + '[0]', threshold=3.00,
+    #              output='default', verbose='no', verify='no')
+    # iraf.pdump(infile=im_name + '0.coo.1', fields="ID, XCENTER, YCENTER, MAG, SHARPNESS, SROUND, GROUND",
+    #           expr="(MAG != INDEF)&&(SHARPNESS != INDEF)&&(SROUND != INDEF)&&(GROUND != INDEF)", Stdout=im_name + '0_det.dat')
 
 
 def matching_stars(infile_phot, infile_DES):
@@ -164,7 +164,7 @@ def write_ZP(infile, infile_DES, band, mag_lim_sat_DES):
     
     RA_DES, DEC_DES, MAG_DES = RA_DES[cond], DEC_DES[cond], MAG_DES[cond]
     
-    IDX, RA_DAO, DEC_DAO, MAG_DAO, MAG_ERR, SHARPNESS, CHI = np.loadtxt(infile, usecols=(1,2,3,4,5,6), unpack=True)
+    IDX, RA_DAO, DEC_DAO, MAG_DAO, MAG_ERR, SHARPNESS, CHI = np.loadtxt(infile, usecols=(0,1,2,3,4,5,6), unpack=True)
     
     C_DAO = SkyCoord(ra=RA_DAO*u.degree, dec=DEC_DAO*u.degree)
     C_DES = SkyCoord(ra=RA_DES*u.degree, dec=DEC_DES*u.degree)
@@ -207,7 +207,7 @@ def min_dist(X, Y, MAG, RANGE_MAG, INIT_ANG_DIST=20.):
     return min_dist
 
 
-def create_pst_based_on_multipar(phot_file, mag_low, band, pst_file, nmax_psf, INIT_ANG_DIST):
+def create_pst_based_on_multipar(phot_file, mag_low, band, pst_file, nmax_psf, INIT_ANG_DIST, MAX_MSKY):
     """This function creates a new paremeter based on sharpness, groundness
     and sroundness, and uses this parameter to select stars to PSF.
 
@@ -316,9 +316,10 @@ def create_pst_based_on_multipar(phot_file, mag_low, band, pst_file, nmax_psf, I
         if count < nmax_psf:
             if idx_par_sort[i] in idx_pst:
                 idx_ = np.where(idx_pst == idx_par_sort[i])[0][0]
-                print("{:<9d}{:<10.3f}{:<10.3f}{:<12.3f}{:<15.7f}".format(
+                if msky[idx_] < MAX_MSKY:
+                    print("{:<9d}{:<10.3f}{:<10.3f}{:<12.3f}{:<15.7f}".format(
                         idx_pst[idx_], xcenter[idx_], ycenter[idx_], mag[idx_], msky[idx_]), file=g)
-                count += 1
+                    count += 1
         else:
             break
     g.close()
@@ -354,7 +355,7 @@ def wcs(im_name, infile, outfile):
 
 
 files = glob.glob('*.fits')
-det_images = glob.glob('*_det.fits')
+det_images = ['DES0224-0958_det.fits', 'DES0224-0958_det.fits']#glob.glob('*_det.fits')
 tiles = [i[0:13] for i in det_images]
 
 # Maybe create a folder to each tile and write outcomes on them.
@@ -372,7 +373,7 @@ mag_lim_sat_DES = {'g': 17.2,
 for ii in det_images:
     detection(ii)
     det_file, coo_file = ii + '0_det.dat', ii + '0.coo.1'
-    for jj in bands:
+    for jj in ['Y', 'z']:
         tilename = ii[0:13] + jj
         image_name = glob.glob(ii[0:13] + jj + '.fits')[0]
         phot_pdump_file = image_name + '0.mag'
@@ -384,7 +385,8 @@ for ii in det_images:
         os.system('join --nocheck-order ' + det_file  + ' ' + phot_pdump_file + ' > ' + tilename + '_parsfile.dat')
 
         imp_pst_file = create_pst_based_on_multipar(tilename + '_parsfile.dat',
-                                                    1.5, jj, pst_file, 50, 20)
+                                                    1.5, jj, pst_file, 50, 20, 100)
+        imp_pst_file = 'DES0224-0958_Y.fits0.pst.1_imp_pst'
         PSF_phot(image_name, imp_pst_file)
         
         all_star_file_flat = image_name + '_pre_cal.dat'
