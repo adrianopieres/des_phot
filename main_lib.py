@@ -373,7 +373,7 @@ mag_lim_sat_DES = {'g': 17.2,
 for ii in det_images:
     detection(ii)
     det_file, coo_file = ii + '0_det.dat', ii + '0.coo.1'
-    for jj in ['Y', 'z']:
+    for jj in ['g', 'r', 'i', 'z', 'Y']:
         tilename = ii[0:13] + jj
         image_name = glob.glob(ii[0:13] + jj + '.fits')[0]
         phot_pdump_file = image_name + '0.mag'
