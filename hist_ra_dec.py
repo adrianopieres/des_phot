@@ -11,7 +11,6 @@ cmap = mpl.cm.get_cmap("inferno_r")
 cmap2 = mpl.cm.get_cmap("inferno")
 from matplotlib.colors import LogNorm
 
-
 mag_lim = 25
 
 tiles = ['DES0052-2623_grizY__calibrated_with_wcs.dat', 'DES0312-5457_grizY__calibrated_with_wcs.dat', 'DES0057-3332_grizY__calibrated_with_wcs.dat', 'DES0356-4957_grizY__calibrated_with_wcs.dat', 'DES0057-3415_grizY__calibrated_with_wcs.dat', 'DES0424-2124_grizY__calibrated_with_wcs.dat', 'DES0100-3332_grizY__calibrated_with_wcs.dat', 'DES0511-3957_grizY__calibrated_with_wcs.dat', 'DES0100-3415_grizY__calibrated_with_wcs.dat', 'DES0515-3957_grizY__calibrated_with_wcs.dat', 'DES0203-0333_grizY__calibrated_with_wcs.dat', 'DES0523-2415_grizY__calibrated_with_wcs.dat', 'DES0221-0958_grizY__calibrated_with_wcs.dat', 'DES2134-0041_grizY__calibrated_with_wcs.dat', 'DES0224-0958_grizY__calibrated_with_wcs.dat']
