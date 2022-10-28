@@ -371,10 +371,11 @@ mag_lim_sat_DES = {'g': 17.2,
 		   'Y': 15.6}
 
 for ii in det_images:
-    detection(ii)
+    # detection(ii)
     det_file, coo_file = ii + '0_det.dat', ii + '0.coo.1'
     for jj in ['g', 'r', 'i', 'z', 'Y']:
         tilename = ii[0:13] + jj
+        '''
         image_name = glob.glob(ii[0:13] + jj + '.fits')[0]
         phot_pdump_file = image_name + '0.mag'
 
@@ -386,13 +387,13 @@ for ii in det_images:
 
         imp_pst_file = create_pst_based_on_multipar(tilename + '_parsfile.dat',
                                                     1.5, jj, pst_file, 50, 20, 100)
-        imp_pst_file = 'DES0224-0958_Y.fits0.pst.1_imp_pst'
+
         PSF_phot(image_name, imp_pst_file)
         
         all_star_file_flat = image_name + '_pre_cal.dat'
 
         wcs(image_name, all_star_file_flat, tilename + '_wcs_not_cal.dat')
-
+        '''
         write_ZP(tilename + '_wcs_not_cal.dat', tilename[:-2] +
                  '_gold_y6.fits', jj, mag_lim_sat_DES[jj])
 
