@@ -160,7 +160,7 @@ def write_ZP(infile, infile_DES, band, mag_lim_sat_DES):
     MAG_DES = hdu[1].data.field('wavg_mag_psf_'+ band)
     hdu.close()
     
-    cond = (MAG_DES > mag_lim_sat_DES)&(MAG_DES < mag_lim_sat_DES + 4.)
+    cond = (MAG_DES > mag_lim_sat_DES + 0.5)&(MAG_DES < mag_lim_sat_DES + 3.)
     
     RA_DES, DEC_DES, MAG_DES = RA_DES[cond], DEC_DES[cond], MAG_DES[cond]
     
