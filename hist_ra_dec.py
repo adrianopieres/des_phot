@@ -73,6 +73,7 @@ for i in tiles:
     plt.savefig(i[:14] + '_ra_dec_dao_DES.png')
     plt.close()
     
+    #################################################
     fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True, tight_layout=False, figsize=(15, 7))
 
     H1, xedges, yedges = np.histogram2d(GR, RI, bins=[50,50], range=[[-0.5, 2.0],[-0.5, 2.0]])
@@ -83,12 +84,12 @@ for i in tiles:
     H2[H2 < 0.01] = 0.01
 
     vmax = max(np.max(H1), np.max(H2))
-    h1 = ax1.imshow(H1, aspect='auto', interpolation='None', cmap=cmap2, extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]], norm=LogNorm(vmin=0.01, vmax=vmax))
+    h1 = ax1.imshow(H1, aspect='auto', interpolation='None', cmap=cmap2, extent=[-0.5, 2.0, -0.5, 2.0], norm=LogNorm(vmin=0.01, vmax=vmax))
     ax1.set_xlabel('g-r')
     ax1.set_ylabel('r-i')
     ax1.set_title('DAOPHOT')
 
-    h2 = ax2.imshow(H2, aspect='auto', interpolation='None', cmap=cmap2, extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]], norm=LogNorm(vmin=0.01, vmax=vmax))
+    h2 = ax2.imshow(H2, aspect='auto', interpolation='None', cmap=cmap2, extent=[-0.5, 2.0, -0.5, 2.0], norm=LogNorm(vmin=0.01, vmax=vmax))
     ax2.set_xlabel('g-r')
     ax2.set_ylabel('r-i')
     ax2.set_title('DES')
@@ -98,7 +99,7 @@ for i in tiles:
 
     plt.savefig(i[:14] + '_gri_color-color_dao_des.png')
     plt.close()
-
+    #################################################
     fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True, tight_layout=False, figsize=(15, 7))
 
     H1, xedges, yedges = np.histogram2d(IZ, ZY, bins=[50,50], range=[[-0.5, 2.0],[-0.5, 2.0]])

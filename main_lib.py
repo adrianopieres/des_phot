@@ -178,13 +178,16 @@ def write_ZP(infile, infile_DES, band, mag_lim_sat_DES):
     best_fit = np.polyfit(
         MAG_DAO[idx_dao], MAG_DES[idx_des], deg=1, w=1/MAG_ERR[idx_dao]**2)
 
-    plt.scatter(MAG_DAO[idx_dao], MAG_DES[idx_des])
+    xx = np.arange(18, 26. 0.5)
+    plt.scatter(MAG_DAO[idx_dao], MAG_DES[idx_des], lable='data')
+    plt.plot(xx, best_fit[0] * xx + best_fit[1], color='k', label='Fit')
     plt.xlabel('MAG in {} band'.format(band))
     plt.legend()
     plt.xlabel('Magnitude in daophot')
     plt.ylabel('Magnitude DES')
     plt.title('Best-Fitting for {} band: {:.4f}, {:.4f}'.format(band,
               best_fit[0], best_fit[1]))
+    plt.legend(loc=2)
     plt.savefig(infile[0:13] + band +'_ZP' + '.png')
     plt.close()
     
