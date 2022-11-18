@@ -193,7 +193,7 @@ def write_ZP(infile, infile_DES, band, mag_lim_sat_DES):
     
     g = open(infile[0:15] + '_calibrated_with_wcs.dat', 'w')
     for i in range(len(IDX)):
-        print(IDX[i], RA_DAO[i], DEC_DAO[i], MAG_DAO[i] + best_fit[0], MAG_ERR[i], SHARPNESS[i], CHI[i], file=g)
+        print(IDX[i], RA_DAO[i], DEC_DAO[i], MAG_DAO[i] + best_fit[1], MAG_ERR[i], SHARPNESS[i], CHI[i], file=g)
     g.close()
 
 
