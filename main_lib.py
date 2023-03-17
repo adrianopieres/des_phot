@@ -1,3 +1,4 @@
+#codigo de fotometria de abertura, psf, ponto zero e insercao de estrelas artificiais
 from __future__ import print_function
 import numpy as np
 from math import sqrt
@@ -19,6 +20,7 @@ import matplotlib.pyplot as plt
 # sudo apt install python3-pyraf
 # conda install matplotlib
 # iraf_env
+#conda activate iraf27
 
 
 def ap_phot(im_name, coord_file, max_n_psf):
@@ -99,10 +101,10 @@ def detection(im_name):
     iraf.centerpars.cbox = 3
     iraf.centerpars.cthresh = 3.0
 
-    # iraf.daofind(image=im_name + '[0]', threshold=3.00,
-    #              output='default', verbose='no', verify='no')
-    # iraf.pdump(infile=im_name + '0.coo.1', fields="ID, XCENTER, YCENTER, MAG, SHARPNESS, SROUND, GROUND",
-    #           expr="(MAG != INDEF)&&(SHARPNESS != INDEF)&&(SROUND != INDEF)&&(GROUND != INDEF)", Stdout=im_name + '0_det.dat')
+    iraf.daofind(image=im_name + '[0]', threshold=3.00,
+                  output='default', verbose='no', verify='no')
+    iraf.pdump(infile=im_name + '0.coo.1', fields="ID, XCENTER, YCENTER, MAG, SHARPNESS, SROUND, GROUND",
+              expr="(MAG != INDEF)&&(SHARPNESS != INDEF)&&(SROUND != INDEF)&&(GROUND != INDEF)", Stdout=im_name + '0_det.dat')
 
 
 def matching_stars(infile_phot, infile_DES):
@@ -179,7 +181,7 @@ def write_ZP(infile, infile_DES, band, mag_lim_sat_DES):
         MAG_DAO[idx_dao], MAG_DES[idx_des], deg=1, w=1/MAG_ERR[idx_dao]**2)
 
     xx = np.arange(18, 26, 0.5)
-    plt.scatter(MAG_DAO[idx_dao], MAG_DES[idx_des], lable='data')
+    plt.scatter(MAG_DAO[idx_dao], MAG_DES[idx_des])
     plt.plot(xx, best_fit[0] * xx + best_fit[1], color='k', label='Fit')
     plt.xlabel('MAG in {} band'.format(band))
     plt.legend()
@@ -193,7 +195,7 @@ def write_ZP(infile, infile_DES, band, mag_lim_sat_DES):
     
     g = open(infile[0:15] + '_calibrated_with_wcs.dat', 'w')
     for i in range(len(IDX)):
-        print(IDX[i], RA_DAO[i], DEC_DAO[i], MAG_DAO[i] + best_fit[1], MAG_ERR[i], SHARPNESS[i], CHI[i], file=g)
+        print(IDX[i], RA_DAO[i], DEC_DAO[i], MAG_DAO[i] * best_fit[0] + best_fit[1], MAG_ERR[i], SHARPNESS[i], CHI[i], file=g)
     g.close()
 
 
@@ -355,10 +357,14 @@ def wcs(im_name, infile, outfile):
     iraf.wcsctran(input=infile, output=outfile, image=im_name+'[0]',
                   inwcs='logical', outwcs='world', col="2 3")
     print('wcs run on {}'.format(outfile))
-
+    
+def addstar(imagename, photfile, psfimage, addimage, minmag, maxmag, nstar):
+    iraf.addstar(imagename=im_name+'[0]',photfile="",psfimage=fits_image + "0.psf.1.fits", addimage=image + "_add_image.fits", minmag=-7.00, maxmag=0.00, nstar=7000, interactive='no',verbose='yes')
+    # Imprime a confirmacao da conclusao da tarefa
+    print('task addstar concluida em {}'.format(fits_image))
 
 files = glob.glob('*.fits')
-det_images = ['DES0224-0958_det.fits', 'DES0224-0958_det.fits']#glob.glob('*_det.fits')
+det_images = glob.glob('*_det.fits')
 tiles = [i[0:13] for i in det_images]
 
 # Maybe create a folder to each tile and write outcomes on them.
@@ -374,11 +380,11 @@ mag_lim_sat_DES = {'g': 17.2,
 		   'Y': 15.6}
 
 for ii in det_images:
-    # detection(ii)
+    detection(ii)
     det_file, coo_file = ii + '0_det.dat', ii + '0.coo.1'
     for jj in ['g', 'r', 'i', 'z', 'Y']:
         tilename = ii[0:13] + jj
-        '''
+        
         image_name = glob.glob(ii[0:13] + jj + '.fits')[0]
         phot_pdump_file = image_name + '0.mag'
 
@@ -396,10 +402,12 @@ for ii in det_images:
         all_star_file_flat = image_name + '_pre_cal.dat'
 
         wcs(image_name, all_star_file_flat, tilename + '_wcs_not_cal.dat')
-        '''
+        
         write_ZP(tilename + '_wcs_not_cal.dat', tilename[:-2] +
                  '_gold_y6.fits', jj, mag_lim_sat_DES[jj])
-
+        '''        
+        addstar(image_name, "", psfimage=fits_image + "0.psf.1.fits", tilename + '_add_stars.fits', 19.0, 26.0, 7000)
+        '''
 import subprocess
 subprocess.call(['speech-dispatcher'])
 subprocess.call(['spd-say', '"your process has finished"'])
