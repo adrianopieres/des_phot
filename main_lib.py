@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 # conda install matplotlib
 # iraf_env
 #conda activate iraf27
-
+#primeiramente baixar imagens (usamos Desportal) e descompactar com o comando funpack no terminal
 
 def ap_phot(im_name, coord_file, max_n_psf):
     """_summary_
@@ -87,7 +87,7 @@ def detection(im_name):
     iraf.datapars.fwhmpsf = 4.00
     iraf.datapars.sigma = sigma  # de acordo com a imagem
     iraf.datapars.readnoi = 0.0
-    iraf.daopars.psfrad = 20.0  # de acordo com imagem # raio da maior imagem
+    iraf.daopars.psfrad = 30.0  # de acordo com imagem # raio da maior imagem
     iraf.datapars.epadu = 1.  # de acordo com imagem
     iraf.daopars.fitrad = 6.  # de acordo com a imagem #(~1.5 ou 2.5 fwhm)
     iraf.daopars.recenter = 'yes'
@@ -159,7 +159,7 @@ def write_ZP(infile, infile_DES, band, mag_lim_sat_DES):
     hdu = fits.open(infile_DES, memmap=True)
     RA_DES = hdu[1].data.field('ra')
     DEC_DES = hdu[1].data.field('dec')
-    MAG_DES = hdu[1].data.field('wavg_mag_psf_'+ band)
+    MAG_DES = hdu[1].data.field('wavg_mag_psf_'+band)
     hdu.close()
     
     cond = (MAG_DES > mag_lim_sat_DES + 1.)&(MAG_DES < mag_lim_sat_DES + 7.)
@@ -176,24 +176,22 @@ def write_ZP(infile, infile_DES, band, mag_lim_sat_DES):
     # plot Mag fotometria x Mag DES:
     # for i,j in zip(idx_dao, idx_des):
     #    print(C_DAO[i].ra.deg, C_DAO[i].dec.deg, C_DES[j].ra.deg, C_DES[j].dec.deg)
-
-    best_fit = np.polyfit(
-        MAG_DAO[idx_dao], MAG_DES[idx_des], deg=1, w=1/MAG_ERR[idx_dao]**2)
-
-    xx = np.arange(18, 26, 0.5)
+    #best_fit = np.polyfit(MAG_DAO[idx_dao], MAG_DES[idx_des], deg=1, w=1/MAG_ERR[idx_dao]**2)
+    best_fit = np.polyfit(MAG_DAO[idx_dao], MAG_DES[idx_des], 1)#w=1/(MAG_ERR[idx_dao])**2)
+    print(best_fit)
+    xx = np.arange(15, 28, 0.5)
     plt.scatter(MAG_DAO[idx_dao], MAG_DES[idx_des])
     plt.plot(xx, best_fit[0] * xx + best_fit[1], color='k', label='Fit')
     plt.xlabel('MAG in {} band'.format(band))
     plt.legend()
     plt.xlabel('Magnitude in daophot')
     plt.ylabel('Magnitude DES')
-    plt.title('Best-Fitting for {} band: {:.4f}, {:.4f}'.format(band,
-              best_fit[0], best_fit[1]))
+    plt.title('Best-Fitting for {} band: {:.4f}, {:.4f}'.format(band,best_fit[0], best_fit[1]))
     plt.legend(loc=2)
-    plt.savefig(infile[0:13] + band +'_ZP' + '.png')
+    plt.savefig(image_name + '_ZP' + '.png')
     plt.close()
     
-    g = open(infile[0:15] + '_calibrated_with_wcs.dat', 'w')
+    g = open(infile[0:20] + '_calibrated_with_wcs.dat', 'w')
     for i in range(len(IDX)):
         print(IDX[i], RA_DAO[i], DEC_DAO[i], MAG_DAO[i] * best_fit[0] + best_fit[1], MAG_ERR[i], SHARPNESS[i], CHI[i], file=g)
     g.close()
@@ -203,8 +201,7 @@ def min_dist(X, Y, MAG, RANGE_MAG, INIT_ANG_DIST=20.):
     min_dist = np.repeat(99.999, len(X))
     for i in range(len(X)):
         cond = (X > X[i] - INIT_ANG_DIST) & (X < X[i] + INIT_ANG_DIST) & \
-            (Y > Y[i] - INIT_ANG_DIST) & (Y < Y[i] +
-                                          INIT_ANG_DIST) & (MAG < MAG[i] - RANGE_MAG)
+            (Y > Y[i] - INIT_ANG_DIST) & (Y < Y[i] + INIT_ANG_DIST) & (MAG < MAG[i] - RANGE_MAG)
         X_, Y_, MAG_ = X[cond], Y[cond], MAG[cond]
         dist2 = np.sort((X[i] - X_)**2 + (Y[i] - Y_)**2)
         if len(dist2) >= 2:
@@ -274,7 +271,7 @@ def create_pst_based_on_multipar(phot_file, mag_low, band, pst_file, nmax_psf, I
     ax3.set_xlabel('Mag')
     ax3.legend()
     ax3.set_yscale('log')
-    plt.savefig(tilename + '_hist_pars.png')
+    plt.savefig(image_name + '_hist_pars.png')
     plt.close()
 
     plt.hist(sharp_norm, bins=30, range=(-4, 4),
@@ -286,10 +283,10 @@ def create_pst_based_on_multipar(phot_file, mag_low, band, pst_file, nmax_psf, I
     plt.hist(newpar, bins=30, range=(-4, 4), histtype='step',
              label='new_par', color='maroon')
     plt.legend()
-    plt.savefig(tilename + '_newpar.png')
+    plt.savefig(image_name + '_newpar.png')
     plt.close()
 
-    min_d = min_dist(XCENTER, YCENTER, MAG, 5., INIT_ANG_DIST)
+    min_d = min_dist(XCENTER, YCENTER, MAG, 7., INIT_ANG_DIST)
 
     bright_star = (MAG < np.min(MAG) + mag_low) & (min_d > INIT_ANG_DIST)
     XCENTER, YCENTER, ID, SHARPNESS, SROUND, GROUND, MAG, sharp_norm, sround_norm, ground_norm, newpar = XCENTER[bright_star], YCENTER[bright_star], ID[bright_star], SHARPNESS[
@@ -298,7 +295,7 @@ def create_pst_based_on_multipar(phot_file, mag_low, band, pst_file, nmax_psf, I
     idx_par_sort = np.argsort(newpar)
     id_sort = [ID[i] for i in idx_par_sort]
 
-    f = open(tilename + '_newpar_band_' + band + '.dat', 'w')
+    f = open(image_name + '_newpar_band_' + band + '.dat', 'w')
     for i in idx_par_sort:
         print(int(ID[i]), XCENTER[i], YCENTER[i],
               sround_norm[i], ground_norm[i], newpar[i], file=f)
@@ -336,19 +333,13 @@ def PSF_phot(fits_image, imp_pst_file):
     # Run on iraf:
     # psf_filename = fits_image[0:13] + '_psf.fits'
     print('Start to run PSF on {}'.format(fits_image))
-    iraf.psf(image=fits_image + "[0]", photfile='default', pstfile=imp_pst_file,
-             psfimage='default', opstfile='default', groupfile='default', interactive='no',
-             verify='no', verbose='no')
+    iraf.psf(image=fits_image + "[0]", photfile='default', pstfile=imp_pst_file, psfimage='default', opstfile='default', groupfile='default', interactive='no',verify='no', verbose='no')
     print('Start to run seePSF on {}'.format(fits_image))
-    iraf.seepsf(psfimage=fits_image + "0.psf.1.fits",
-                image=fits_image + '_seepsf.fits')
+    iraf.seepsf(psfimage=fits_image + "0.psf.1.fits",image=fits_image + '_seepsf.fits')
     print('Start to run allstar on {}'.format(fits_image))
-    iraf.allstar(image=fits_image+"[0]", photfile='default', psfimage='default',
-                 cache='no', allstarfile='default', rejfile='default',
-                 subimage='default', verify='no', verbose='no')
+    iraf.allstar(image=fits_image+"[0]", photfile='default', psfimage='default', cache='no', allstarfile='default', rejfile='default',subimage='default', verify='no', verbose='no') #psfimage='default',
     print('Finished to run allstar on {}'.format(fits_image))
-    iraf.pdump(infile=fits_image+'0.als.1', fields="ID,XCENTER,YCENTER,MAG,MERR,SHARPNESS,CHI",
-               expr="(MAG != INDEF)&&(MERR != INDEF)", Stdout=fits_image+'_pre_cal.dat')
+    iraf.pdump(infile=fits_image+'0.als.1', fields="ID,XCENTER,YCENTER,MAG,MERR,SHARPNESS,CHI",expr="(MAG != INDEF)&&(MERR != INDEF)", Stdout=fits_image+'_pre_cal.dat')
 
     print('PSF_phot run on {}'.format(fits_image))
 
@@ -358,15 +349,21 @@ def wcs(im_name, infile, outfile):
                   inwcs='logical', outwcs='world', col="2 3")
     print('wcs run on {}'.format(outfile))
     
-def addstar(imagename, photfile, psfimage, addimage, minmag, maxmag, nstar):
-    iraf.addstar(imagename=im_name+'[0]',photfile="",psfimage=fits_image + "0.psf.1.fits", addimage=image + "_add_image.fits", minmag=-7.00, maxmag=0.00, nstar=7000, interactive='no',verbose='yes')
-    # Imprime a confirmacao da conclusao da tarefa
-    print('task addstar concluida em {}'.format(fits_image))
+'''
+#converter ra e dec para x e Y
+def wcs2(im_name, infile, outfile):
+    iraf.wcsctran(input=infile, output=outfile, image=im_name+'[0]', inwcs='world', outwcs='logical', col="2 3")
+    print('wcs run on {}'.format(outfile))
+wcs2('DES0221-0958_r.fits0.add.1','DES0221-0958_r__calibrated_with_wcs.dat' , 'DES0221-0958_r_x_y_with_wcs.add.dat')
+'''   
+    
+def add_star(im_name, photfile, psfimage, addimage, minmag, maxmag, nstar):
+    iraf.addstar(image=im_name, photfile=photfile, psfimage=psfimage, addimage="default", minmag=minmag, maxmag=maxmag, nstar=nstar, interactive='no',verify='no', verbose='no')
+    print('task addstar concluida em {}'.format(image))
 
-files = glob.glob('*.fits')
-det_images = glob.glob('*_det.fits')
-tiles = [i[0:13] for i in det_images]
-
+files = sorted(glob.glob('*.fits'))
+#det_images = glob.glob('*_det.fits')
+tiles =np.unique([i[0:13] for i in files])
 # Maybe create a folder to each tile and write outcomes on them.
 bands = ['g', 'r', 'i', 'z', 'Y']
 
@@ -379,35 +376,42 @@ mag_lim_sat_DES = {'g': 17.2,
 		   'z': 17.5,
 		   'Y': 15.6}
 
-for ii in det_images:
-    detection(ii)
-    det_file, coo_file = ii + '0_det.dat', ii + '0.coo.1'
-    for jj in ['g', 'r', 'i', 'z', 'Y']:
+for ii in tiles:
+    for jj in ['Y', 'Y']:
         tilename = ii[0:13] + jj
-        
+        print('o tilename e : ', tilename)
+        print('running code on', ii[0:12], 'and band: ', jj)
+        print(tiles)
         image_name = glob.glob(ii[0:13] + jj + '.fits')[0]
+        #image_name = ('DES0100-3332_Y.fits')[0]
+        print('running photometry on', image_name)
+          
+        detection(image_name)
+        det_file, coo_file = image_name + '0_det.dat', image_name + '0.coo.1'
+            
         phot_pdump_file = image_name + '0.mag'
-
-        ap_phot(image_name, coo_file, 200)
         
+        ap_phot(image_name, coo_file, 200)
+       
         pst_file = glob.glob(ii[0:13] + jj + '*.pst.1')[0]
         
-        os.system('join --nocheck-order ' + det_file  + ' ' + phot_pdump_file + ' > ' + tilename + '_parsfile.dat')
-
-        imp_pst_file = create_pst_based_on_multipar(tilename + '_parsfile.dat',
-                                                    1.5, jj, pst_file, 50, 20, 100)
-
+        #os.system('join --nocheck-order ' + det_file  + ' ' + phot_pdump_file + ' > ' + image_name + '_parsfile.dat')
+        os.system('sort -k 1b,1 ' + det_file + ' > ' + det_file + '_sorted')
+        os.system('sort -k 1b,1 ' + phot_pdump_file + ' > ' + phot_pdump_file + '_sorted')
+        os.system('join ' + det_file  + '_sorted ' + phot_pdump_file + '_sorted > ' + image_name + '_parsfile.dat')
+        #imp_pst_file = create_pst_based_on_multipar(image_name + '_parsfile.dat',1.5, jj, pst_file, 50, 20, 100)
+        imp_pst_file = create_pst_based_on_multipar(image_name + '_parsfile.dat',1.5, jj, pst_file, 50, 20, 100)
         PSF_phot(image_name, imp_pst_file)
-        
+            
         all_star_file_flat = image_name + '_pre_cal.dat'
-
-        wcs(image_name, all_star_file_flat, tilename + '_wcs_not_cal.dat')
         
-        write_ZP(tilename + '_wcs_not_cal.dat', tilename[:-2] +
-                 '_gold_y6.fits', jj, mag_lim_sat_DES[jj])
-        '''        
-        addstar(image_name, "", psfimage=fits_image + "0.psf.1.fits", tilename + '_add_stars.fits', 19.0, 26.0, 7000)
-        '''
+        wcs(image_name, all_star_file_flat, image_name + '_wcs_not_cal.dat')
+            
+        write_ZP(image_name + '_wcs_not_cal.dat', tilename[:-2] +  '_gold_y6.fits', jj, mag_lim_sat_DES[jj])
+            
+        '''     
+        add_star(image, '', image + "0.psf.1.fits", tilename + '_add_stars.fits', 19.0, 26.0, 7000)
+        '''      
 import subprocess
 subprocess.call(['speech-dispatcher'])
 subprocess.call(['spd-say', '"your process has finished"'])

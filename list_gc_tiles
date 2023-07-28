@@ -1,0 +1,63 @@
+Lista aglomerados globulares:
+
+ID                                                            Tile             g band zero point    r band zero point    i band zero point    z band zero point    Y band zero point          
+
+NGC 288(ok/plot feito)                                        DES0052-2623     1.0331, -3.3912      1.0257, -2.9866      1.0245, -3.0128      1.0296, -3.0817      1.0086, -1.7806 
+Whiting 1(ok/plot feito)                                      DES0203-0333     1.0193, -1.4864      1.0321, -3.5824      1.0297, -3.3757      1.0222, -3.3204      1.0134, -0.7287                                    
+NGC 1261(ok/plot feito)                                       DES0312-5457     1.0374, -3.3557      1.0495, -2.2037      1.0595, -3.6412      1.0615, -3.7839      1.0318, -1.1063       
+AM 1(ok/plot feito)                                           DES0356-4957     1.0113, -2.9171      1.0202, -3.1122      1.0255, -3.3372      1.0314, -3.2539      1.0131, -03138 
+Eridanus(ok/plot feito)                                       DES0424-2124     1.0187, -1.7692      1.0329, -3.1352      1.0343, -3.5002      1.0297, -2.9795      1.0247, -2.0044
+NGC 1851(ok/plot feito)                                       DES0515-3957     1.0301, -3.0491      1.0545, -3.6363      1.0424, -2.8856      1.0707, -4.1149      1.0268, -2.4300
+NGC 1851(ok/plot feito)                                       DES0511-3957     1.0229, -3.2724      1.0246, -3.3166      1.0242, -2.7130      1.0367, -3.3305      1.0194, -2.3859
+NGC 1904(ok/plot feito)                                       DES0523-2415     1.0219, -3.0488      1.0447, -2.3872      1.0544, -3.6906      1.0491, -3.1425      1.0484, -2.7957
+NGC 7089(ok/plot feito)                                       DES2134-0041     1.0232, -3.2450      1.0496, -3.7151      1.0304, -3.2121      1.0409, -3.1384      1.0283, -2.2953 
+Galaxia anã de Sculptor(ok/plot feito)                        DES0100-3332     1.0179, -2.6291      1.0626, -4.1464      1.0279, -3.3073      1.0145, -2.9926      1.0049, -2.0160
+Galaxia anã de Sculptor(ok/plot feito)                        DES0100-3415     1.0206, -3.1700      1.0416, -3.8097      1.0294, -3.4073      1.0245, -3,3166      1.0123, -2.2398
+Galaxia anã de Sculptor(ok/plot feito)                        DES0057-3332     1.0297, -3.1189      1.0199. -3.0503      1.0218, -3.1347      0.9956, -2.3047      1.0139, -0.3500 
+Galaxia anã de Sculptor(ok/plot feito)                        DES0057-3415     1.0095, -2.5706      1.0333, -3.5742      1.0408, -3.7050      1.0356, -3.4831      1.0178, -2.5081
+(ok)                                                          DES0221-0958     1.0105, -2.7564      1.0219, -3.1563      1.0300, -3.3054      1.0609, -2.5058      1.0472, -2.6643
+(ok)                                                          DES0224-0958     1.0121, -2.7973      1.0243, -3.1241      1.0222, -3.1016      1.0202, -1.4360      1.0078, -1.8200
+Galaxia anã de Fornax(ok/plot feito)                          DES0240-3415     1.0130, -1.6248      1.0452, -3.8577      1.0293, -3.2992      1.0275, -3.2984      1.0147, 2.0849
+Galaxia anã de Fornax(ok/plot feito)                          DES0237-3415     1.0118, -2.8588      1.0247, -1.3725      1.0053, -4.5103      1.0072, 4.4302       0.9974, 4.5519
+Galaxia anã de Fornax(ok/plot feito)                          DES0238-3457     1.0236, -3.3049      1.0299, -3.2152      1.0300, -3.2047      1.0113, -2.7796      1.0123, -0.2001
+Galaxia anã de Fornax(ok/plot feito)                          DES0241-3457     1.0173, -3.0778      1.0187, -3.1428      1.0151, -2.9767      1.0346, -3.5253      1.0174, -2.8501                                     
+
+#todos aglomerados transformados em arquivos fits por objeto
+
+NGC 1851: overlap em RA = 05:13:52.0. Fornax : RA = 02:39:13, 02:40:02, DEC = -34.:36:06. Sculptor: RA = 00:59:08, 00:59:00 e DEC = -33.53:40
+
+#02/04: adicionando estrelas artificiais para rodar fotometria, a do tile 0100-3332 banda g ficou bom(referencia)
+feito em :DES0052-2623, DES0203-0333, DES0221-0958, DES0224-0958, DES0100-3332, DES0100-3415, DES0237-3415, DES0238-3457, DES0240-3415, DES0241-3457, DES0312-5457
+#08/04: rodando a fotometria nas imagens com estrelas adicionadas artificialmente
+codigo para transformar ra e dec para x e y = 
+
+# NGC 288 o tile DES0052-2623 nao achei a psf antiga
+#AM 1 o tile DES0356-4957 nao achei a psf antiga
+#Eridanus o tile DES0424-2124 nao achei a psf antiga
+NGC 1904 o tile DES0523-2415 nao achei a psf antiga  
+ NGC 7089 o tile DES2134-0041 nao achei a psf antiga
+ NGC 1851 o tileDES0515-3957 e DES0511-3957 nao achei a psf antiga
+
+#objetos com a psf antiga para fazer plot de completeza:
+#Whiting 1 (feito) DES0203-0333
+#NGC 1261(feito) DES0312-5457
+#Galaxia anã de Sculptor (todos os tiles)(feito) DES0100-3332 DES0100-3415 DES0057-3332 DES0057-3415 
+#Galaxia anã de Fornax (todos os tiles)(feito) DES0240-3415 DES0237-3415 DES0238-3457 DES0241-3457
+
+#objetos para nova fotometria:                    g band zero point    r band zero point (NOVO)
+NGC 288 o tile DES0052-2623 feito                 1.0161, -3.0958      0.9890, -2.0344 
+
+AM 1 o tile DES0356-4957 feito                    0.9700, -1.8971      0.9964, -2.5655          
+
+Eridanus o tile DES0424-2124 feito                0.2624, -1.8424      1.0014, -2.2110       
+
+NGC 1904 o tile DES0523-2415feito                 1.0112, -2.3016      1.0224, -2.9994               
+
+NGC 7089 o tile DES2134-0041feito                 1.0164, -2.7991      0.9791, -1.5026  
+
+NGC 1851 o tile DES0515-3957 feito                1.0240, -2.8958      1.0249, -3.0225
+NGC 1851 o tile DES0511-3957 feito                1.0150, -3.1356      1.0200, -3.0129
+
+
+# enviar para adriano os arquivos precal.dat dos tiles para calcular ZP correto :DES0052-2623(no onedrive) DES0356-4957 DES0424-2124 DES0523-2415 DES2134-0041 DES0515-3957 DES0511-3957 (DES0203-0333 DES0312-5457 DES0100-3332 DES0100-3415 DES0057-3332 DES0057-3415 )
+
