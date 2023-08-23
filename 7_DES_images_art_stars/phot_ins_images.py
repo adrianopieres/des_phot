@@ -353,9 +353,9 @@ for ii, jj in enumerate(tile_name_band):
         ins_image = tile_name_band[ii] + '.fits0.add.' + str(kk+1) + '.fits'
         print('Inserting stars in {} for the {:d} time'.format(ins_image, kk))
 
-        add_star(image_name[ii], "", psf_files[ii], ins_image, 19., 28, n_total_ins_stars[ii])
+        ZP = zp_from_file(tile_name_band[ii])       
 
-        # ZP = zp_from_file(tile_name_band[ii])
+        add_star(image_name[ii], "", psf_files[ii], ins_image, 19. - ZP, 28 - ZP, n_total_ins_stars[ii])
 
         detection(ins_image)
 
